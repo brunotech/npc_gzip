@@ -33,7 +33,7 @@ def non_neural_knn_exp(
     k: int,
     para: bool = True,
 ):
-    print("KNN with compressor={}".format(compressor_name))
+    print(f"KNN with compressor={compressor_name}")
     cp = DefaultCompressor(compressor_name)
     knn_exp_ins = KnnExpText(agg_func, cp, dis_func)
     start = time.time()
@@ -53,7 +53,7 @@ def non_neural_knn_exp(
     else:
         knn_exp_ins.calc_dis(test_data, train_data=train_data)
         knn_exp_ins.calc_acc(k, test_label, train_label=train_label)
-    print("spent: {}".format(time.time() - start))
+    print(f"spent: {time.time() - start}")
 
 
 def record_distance(
@@ -66,7 +66,7 @@ def record_distance(
     out_dir,
     para=True,
 ):
-    print("compressor={}".format(compressor_name))
+    print(f"compressor={compressor_name}")
     numpy_dir = os.path.join(out_dir, compressor_name)
     if not os.path.exists(numpy_dir):
         os.makedirs(numpy_dir)
@@ -84,7 +84,7 @@ def record_distance(
     else:
         knn_exp.calc_dis(test_data, train_data=train_data)
         np.save(out_fn, np.array(knn_exp.distance_matrix))
-    print("spent: {}".format(time.time() - start))
+    print(f"spent: {time.time() - start}")
 
 
 def non_neurl_knn_exp_given_dis(dis_matrix, k, test_label, train_label):
@@ -126,11 +126,11 @@ if __name__ == "__main__":
         os.mkdir(args.output_dir)
     train_idx_fn = os.path.join(
         args.output_dir,
-        "{}_train_indicies_{}per_class".format(args.dataset, args.num_train),
+        f"{args.dataset}_train_indicies_{args.num_train}per_class",
     )
     test_idx_fn = os.path.join(
         args.output_dir,
-        "{}_test_indicies_{}per_class".format(args.dataset, args.num_test),
+        f"{args.dataset}_test_indicies_{args.num_test}per_class",
     )
     # all dataset class number
     ds2classes = {
@@ -164,67 +164,63 @@ if __name__ == "__main__":
         "custom",
     ]:
         dataset_pair = eval(args.dataset)(root=args.data_dir)
+    elif args.dataset == "20News":
+        dataset_pair = load_20news()
+    elif args.dataset == "Ohsumed":
+        dataset_pair = load_ohsumed(args.data_dir)
+    elif args.dataset == "Ohsumed_single":
+        dataset_pair = load_ohsumed_single(args.data_dir)
+    elif args.dataset in ["R8", "R52"]:
+        dataset_pair = load_r8(args.data_dir)
+    elif args.dataset == "kinnews":
+        dataset_pair = load_kinnews_kirnews(
+            dataset_name="kinnews_kirnews", data_split="kinnews_cleaned"
+        )
+    elif args.dataset == "kirnews":
+        dataset_pair = load_kinnews_kirnews(
+            dataset_name="kinnews_kirnews", data_split="kirnews_cleaned"
+        )
+    elif args.dataset == "swahili":
+        dataset_pair = load_swahili()
+    elif args.dataset == "filipino":
+        dataset_pair = load_filipino(args.data_dir)
     else:
-        if args.dataset == "20News":
-            dataset_pair = load_20news()
-        elif args.dataset == "Ohsumed":
-            dataset_pair = load_ohsumed(args.data_dir)
-        elif args.dataset == "Ohsumed_single":
-            dataset_pair = load_ohsumed_single(args.data_dir)
-        elif args.dataset == "R8" or args.dataset == "R52":
-            dataset_pair = load_r8(args.data_dir)
-        elif args.dataset == "kinnews":
-            dataset_pair = load_kinnews_kirnews(
-                dataset_name="kinnews_kirnews", data_split="kinnews_cleaned"
-            )
-        elif args.dataset == "kirnews":
-            dataset_pair = load_kinnews_kirnews(
-                dataset_name="kinnews_kirnews", data_split="kirnews_cleaned"
-            )
-        elif args.dataset == "swahili":
-            dataset_pair = load_swahili()
-        elif args.dataset == "filipino":
-            dataset_pair = load_filipino(args.data_dir)
-        else:
-            dataset_pair = load_custom_dataset(args.data_dir)
+        dataset_pair = load_custom_dataset(args.data_dir)
     num_classes = ds2classes[args.dataset]
     # choose indices
-    if not args.all_test:
-        # pick certain number per class
-        if args.test_idx_fn is not None:
-            try:
-                test_idx = np.load(args.test_idx_fn)
-                test_data, test_labels = read_torch_text_labels(
-                    dataset_pair[1], test_idx
-                )
-            except FileNotFoundError:
-                print("No generated indices file for test set provided")
-        elif args.test_idx_start is not None:
-            test_idx = list(range(args.test_idx_start, args.test_idx_end))
-            test_data, test_labels = read_torch_text_labels(dataset_pair[1], test_idx)
-        else:
-            test_data, test_labels = pick_n_sample_from_each_class_given_dataset(
-                dataset_pair[1], args.num_test, test_idx_fn
-            )
-    else:
+    if args.all_test:
         train_pair, test_pair = dataset_pair[0], dataset_pair[1]
         test_data, test_labels = read_torch_text_labels(
             test_pair, range(len(test_pair))
         )
-    if not args.all_train:
-        if args.test_idx_fn is not None or args.test_idx_start is not None:
-            train_idx = np.load(train_idx_fn + ".npy")
-            train_data, train_labels = read_torch_text_labels(
-                dataset_pair[0], train_idx
+    elif args.test_idx_fn is not None:
+        try:
+            test_idx = np.load(args.test_idx_fn)
+            test_data, test_labels = read_torch_text_labels(
+                dataset_pair[1], test_idx
             )
-        else:
-            train_data, train_labels = pick_n_sample_from_each_class_given_dataset(
-                dataset_pair[0], args.num_train, train_idx_fn
-            )
+        except FileNotFoundError:
+            print("No generated indices file for test set provided")
+    elif args.test_idx_start is not None:
+        test_idx = list(range(args.test_idx_start, args.test_idx_end))
+        test_data, test_labels = read_torch_text_labels(dataset_pair[1], test_idx)
     else:
+        test_data, test_labels = pick_n_sample_from_each_class_given_dataset(
+            dataset_pair[1], args.num_test, test_idx_fn
+        )
+    if args.all_train:
         train_pair, test_pair = dataset_pair[0], dataset_pair[1]
         train_data, train_labels = read_torch_text_labels(
             train_pair, range(len(train_pair))
+        )
+    elif args.test_idx_fn is not None or args.test_idx_start is not None:
+        train_idx = np.load(f"{train_idx_fn}.npy")
+        train_data, train_labels = read_torch_text_labels(
+            dataset_pair[0], train_idx
+        )
+    else:
+        train_data, train_labels = pick_n_sample_from_each_class_given_dataset(
+            dataset_pair[0], args.num_train, train_idx_fn
         )
     if not args.record:
         non_neural_knn_exp(
@@ -238,54 +234,45 @@ if __name__ == "__main__":
             args.k,
             para=args.para,
         )
-    else:
-        if not args.score:
-            if args.test_idx_start is None:
-                start_idx = 0
-            else:
-                start_idx = args.test_idx_start
-            for i in range(0, len(test_data), 100):
-                print(
-                    "from {} to {}".format(
-                        start_idx + i, start_idx + i + 100
+    elif args.score:
+        if os.path.isdir(args.distance_fn):
+            all_correct = 0
+            total_num = 0
+            for fn in tqdm(os.listdir(args.distance_fn)):
+                if fn.endswith(".npy"):
+                    dis_matrix = np.load(os.path.join(args.distance_fn, fn))
+                    start_idx, end_idx = int(fn.split(".")[0].split("_")[-3]), int(
+                        fn.split(".")[0].split("_")[-1]
                     )
-                )
-                output_rel_fn = "test_dis_idx_from_{}_to_{}".format(
-                    start_idx + i, start_idx + i + 100
-                )
-                output_dir = os.path.join(
-                    args.output_dir, os.path.join("distance", args.dataset)
-                )
-                record_distance(
-                    args.compressor,
-                    np.array(test_data)[i : i + 100],
-                    output_rel_fn,
-                    train_data,
-                    agg_by_concat_space,
-                    NCD,
-                    output_dir,
-                    para=args.para,
-                )
+                    sub_test_labels = test_labels[
+                        start_idx:end_idx
+                    ]  # assume all_test=True, all_train=True
+                    correct = non_neurl_knn_exp_given_dis(
+                        dis_matrix, args.k, sub_test_labels, train_labels
+                    )
+                    all_correct += sum(correct)
+                    total_num += len(correct)
+                    del dis_matrix
+            print(f"Altogether Accuracy is: {all_correct / total_num}")
         else:
-            if os.path.isdir(args.distance_fn):
-                all_correct = 0
-                total_num = 0
-                for fn in tqdm(os.listdir(args.distance_fn)):
-                    if fn.endswith(".npy"):
-                        dis_matrix = np.load(os.path.join(args.distance_fn, fn))
-                        start_idx, end_idx = int(fn.split(".")[0].split("_")[-3]), int(
-                            fn.split(".")[0].split("_")[-1]
-                        )
-                        sub_test_labels = test_labels[
-                            start_idx:end_idx
-                        ]  # assume all_test=True, all_train=True
-                        correct = non_neurl_knn_exp_given_dis(
-                            dis_matrix, args.k, sub_test_labels, train_labels
-                        )
-                        all_correct += sum(correct)
-                        total_num += len(correct)
-                        del dis_matrix
-                print("Altogether Accuracy is: {}".format(all_correct / total_num))
-            else:
-                dis_matrix = np.load(args.distance_fn)
-                non_neurl_knn_exp_given_dis(dis_matrix, args.k, test_labels, train_labels)
+            dis_matrix = np.load(args.distance_fn)
+            non_neurl_knn_exp_given_dis(dis_matrix, args.k, test_labels, train_labels)
+
+    else:
+        start_idx = 0 if args.test_idx_start is None else args.test_idx_start
+        for i in range(0, len(test_data), 100):
+            print(f"from {start_idx + i} to {start_idx + i + 100}")
+            output_rel_fn = f"test_dis_idx_from_{start_idx + i}_to_{start_idx + i + 100}"
+            output_dir = os.path.join(
+                args.output_dir, os.path.join("distance", args.dataset)
+            )
+            record_distance(
+                args.compressor,
+                np.array(test_data)[i : i + 100],
+                output_rel_fn,
+                train_data,
+                agg_by_concat_space,
+                NCD,
+                output_dir,
+                para=args.para,
+            )

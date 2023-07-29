@@ -21,8 +21,7 @@ def NCD(c1: float, c2: float, c12: float) -> float:
         NCD(c1, c2, c12) = (c12 - min(c1, c2)) / max(c1, c2)
     """
 
-    distance = (c12 - min(c1, c2)) / max(c1, c2)
-    return distance
+    return (c12 - min(c1, c2)) / max(c1, c2)
 
 
 def CLM(c1, c2, c12):
@@ -40,8 +39,7 @@ def CLM(c1, c2, c12):
     Formula:
         CLM(c1, c2, c12) = 1 - (c1 + c2 - c12) / c12
     """
-    dis = 1 - (c1 + c2 - c12) / c12
-    return dis
+    return 1 - (c1 + c2 - c12) / c12
 
 
 def CDM(c1: float, c2: float, c12: float) -> float:
@@ -59,8 +57,7 @@ def CDM(c1: float, c2: float, c12: float) -> float:
     Formula:
         CDM(c1, c2, c12) = c12 / (c1 + c2)
     """
-    dis = c12 / (c1 + c2)
-    return dis
+    return c12 / (c1 + c2)
 
 
 def MSE(v1: np.ndarray, v2: np.ndarray) -> float:
@@ -93,7 +90,7 @@ def agg_by_concat_space(t1: str, t2: str) -> str:
         str: `{t1} {t2}`
     """
 
-    return t1 + " " + t2
+    return f"{t1} {t2}"
 
 
 def agg_by_jag_word(t1: str, t2: str) -> str:
@@ -114,9 +111,7 @@ def agg_by_jag_word(t1: str, t2: str) -> str:
     combined = []
     minimum_list_size = min([len(t1_list), len(t2_list)])
     for i in range(0, minimum_list_size - 1, 2):
-        combined.append(t1_list[i])
-        combined.append(t2_list[i + 1])
-
+        combined.extend((t1_list[i], t2_list[i + 1]))
     if len(t1_list) > len(t2_list):
         combined += t1_list[i:]
     return " ".join(combined)
@@ -139,8 +134,7 @@ def agg_by_jag_char(t1: str, t2: str):
     combined = []
     minimum_list_size = min([len(t1_list), len(t2_list)])
     for i in range(0, minimum_list_size - 1, 2):
-        combined.append(t1_list[i])
-        combined.append(t2_list[i + 1])
+        combined.extend((t1_list[i], t2_list[i + 1]))
     if len(t1_list) > len(t2_list):
         combined += t1_list[i:]
 
@@ -166,14 +160,11 @@ def aggregate_strings(stringa: str, stringb: str, by_character: bool = False) ->
     combined = []
     minimum_list_size = min([len(lista), len(listb)])
     for i in range(0, minimum_list_size - 1, 2):
-        combined.append(lista[i])
-        combined.append(listb[i + 1])
+        combined.extend((lista[i], listb[i + 1]))
     if len(lista) > len(listb):
         combined += lista[i:]
 
-    if by_character:
-        return "".join(combined)
-    return " ".join(combined)
+    return "".join(combined) if by_character else " ".join(combined)
 
 
 def agg_by_avg(i1: torch.Tensor, i2: torch.Tensor) -> torch.Tensor:
