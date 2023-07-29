@@ -128,8 +128,7 @@ class KnnExpText:
         t1t2_compressed = self.compressor.get_compressed_len(
             self.aggregation_func(t1, t2)
         )
-        distance = self.distance_func(t1_compressed, t2_compressed, t1t2_compressed)
-        return distance
+        return self.distance_func(t1_compressed, t2_compressed, t1t2_compressed)
 
     def calc_dis_single_multi(self, train_data: list, datum: str) -> list:
         """
@@ -168,13 +167,10 @@ class KnnExpText:
             float-like: Distance between `t1` and `t2`.
         """
 
-        if train_data is not None:
-            data_to_compare = train_data
-        else:
-            data_to_compare = data
+        data_to_compare = train_data if train_data is not None else data
         for i, t1 in tqdm(enumerate(data)):
             distance4i = []
-            for j, t2 in enumerate(data_to_compare):
+            for t2 in data_to_compare:
                 distance = self.distance_func(t1, t2)
                 distance4i.append(distance)
             self.distance_matrix.append(distance4i)
@@ -230,18 +226,17 @@ class KnnExpText:
             for pair in sorted_pred_lab:
                 if pair[1] < most_count:
                     break
-                if not rand:
-                    if pair[0] == label[i]:
-                        if_right = 1
-                        most_label = pair[0]
-                else:
+                if rand:
                     most_voted_labels.append(pair[0])
+                elif pair[0] == label[i]:
+                    if_right = 1
+                    most_label = pair[0]
             if rand:
                 most_label = random.choice(most_voted_labels)
                 if_right = 1 if most_label == label[i] else 0
             pred.append(most_label)
             correct.append(if_right)
-        print("Accuracy is {}".format(sum(correct) / len(correct)))
+        print(f"Accuracy is {sum(correct) / len(correct)}")
         return pred, correct
 
     def combine_dis_acc(
@@ -275,10 +270,7 @@ class KnnExpText:
             compare_label = label
             start = 1
             end = k + 1
-        if train_data is not None:
-            data_to_compare = train_data
-        else:
-            data_to_compare = data
+        data_to_compare = train_data if train_data is not None else data
         for i, t1 in tqdm(enumerate(data)):
             distance4i = self.calc_dis_single_multi(data_to_compare, t1)
             sorted_idx = np.argsort(np.array(distance4i))
@@ -300,7 +292,7 @@ class KnnExpText:
                     most_label = pair[0]
             pred.append(most_label)
             correct.append(if_right)
-        print("Accuracy is {}".format(sum(correct) / len(correct)))
+        print(f"Accuracy is {sum(correct) / len(correct)}")
         return pred, correct
 
     def combine_dis_acc_single(
